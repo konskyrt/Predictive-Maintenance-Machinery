@@ -1,0 +1,98 @@
+library(dplyr)
+library(reshape2)
+
+
+```{r}
+head(IE01_552_051_data_pack)
+df <- IE01_552_051_data_pack # just to keep the original dataframe untouched
+df <- mutate_if(df, is.character, as.factor) # convert char data to categorical
+df$SIA552051.801 <- as.numeric(df$SIA552051.801) # this char data was actually integer
+df$Failure <- as.factor(df$Failure) # failure was a numeric -> changed to categorical
+head(df)
+str(df) # getting all the levels
+
+dfnum <- cbind(Timestamp = df$Timestamp, select(df, which(sapply(df,is.numeric)))) # create partial dataframe for just numeric data
+head(dfnum)
+
+dfcat <- cbind(Timestamp = df$Timestamp, select(df, which(sapply(df,is.factor)))) #  create partial dataframe for just categorical data
+head(dfcat)
+
+ggplot(data = df, aes(x=Timestamp, y=AI552051.754_ALM)) + geom_point()
+
+ggplot(data = df, aes(x=Timestamp, y=AI552051.754_ALM)) + geom_line()
+
+
+dfintecept <- subset(df,df$Failure==1) # dataframe with data from failure times
+sp <- ggplot(data = df, mapping = aes(x=Timestamp, y=AI552051.754_ALM)) + geom_point()
+
+sp + geom_vline(xintercept = dfintecept$Timestamp, color='red')
+
+```
+
+
+head(IE01_552_051_data_pack)
+df <- IE01_552_051_data_pack # just to keep the original dataframe untouched
+df <- mutate_if(df, is.character, as.factor) # convert char data to categorical
+df$SIA552051.801 <- as.numeric(df$SIA552051.801) # this char data was actually integer
+df$Failure <- as.factor(df$Failure) # failure was a numeric -> changed to categorical
+head(df)
+str(df) # getting all the levels
+
+dfnum <- cbind(Timestamp = df$Timestamp, select(df, which(sapply(df,is.numeric)))) # create partial dataframe for just numeric data
+head(dfnum)
+
+dfcat <- cbind(Timestamp = df$Timestamp, select(df, which(sapply(df,is.factor)))) #  create partial dataframe for just categorical data
+head(dfcat)
+
+ggplot(data = df, aes(x=Timestamp, y=AI552051.754_ALM)) + geom_point()
+
+ggplot(data = df, aes(x=Timestamp, y=AI552051.754_ALM)) + geom_line()
+
+
+dfintecept <- subset(df,df$Failure==1) # dataframe with data from failure times
+sp <- ggplot(data = df, mapping = aes(x=Timestamp, y=AI552051.754_ALM)) + geom_point()
+
+sp + geom_vline(xintercept = dfintecept$Timestamp, color='red')
+
+
+library(corrplot)
+dfnumclean <- na.omit(dfnum)
+summary(dfnumclean)
+corrplot(cor(dfnumclean[-1]))
+
+#Marie: looping through columns for t-test
+dfnumfail <- subset(dfnum,dfnum$Failure==1) # dataframe with data from failure times
+dfnumgood <- subset(dfnum,dfnum$Failure==0) # dataframe with data from non failure times
+
+for (icol in seq(2,ncol(dfnum)-1))
+{ print(icol)
+  print(t.test(dfnumfail[icol] , dfnumgood[icol]))}
+
+
+
+#Chi-square tests
+#Loop through all categorical output sensors and calculate chi-squares
+cat_col <- c('AI552051.754_ALM','BACT.552051', 'BCMPLT.552051', 'FAL552051.754', 'HV552051.331', 'HV552051.332', 'LAH552051.670', 'LAH552051.678', 'LAH552051.680', 'M552051.801', 'M552051.802', 'M552051.823', 'M552051.826', 'M552051.871', 'MAINT.552051', 'MODMAN.552051', 'MODSTS.552051', 'PARTREC.552051', 'PHASE.552051', 'PIN.552051', 'QCA552051_001', 'RUN.552051', 'SIC552051.801_ALM', 'SSOALM.552051', 'VI552051.748_ALM', 'ZS552051.737', 'ZS552051.740', 'ZS552051_753')
+
+p_vals <- c()
+for (name in cat_col){
+  tab <- table(data[[name]], data$Failure)
+  p_vals <- c(p_vals, chisq.test(tab)$p.value)
+}
+#p_vals <- rbind(cat_col, p_vals)
+p_vals <- data.frame(p_vals)
+rownames(p_vals) <- cat_col
+p_vals
+
+#See which ones are significant
+significant <- subset(p_vals, p_vals <= 0.05)
+significant
+unsignificant <- subset(p_vals, p_vals > 0.05)
+unsignificant
+
+
+#Next part
+inds = which(df$Failure == 1)
+# We use lapply() to get all rows for all indices, result is a list
+rows <- lapply(inds, function(x) (x-5))
+               
