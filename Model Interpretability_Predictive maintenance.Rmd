@@ -5,6 +5,7 @@ library(reshape2)
 ```{r}
 head(IE01_552_051_data_pack)
 df <- IE01_552_051_data_pack # just to keep the original dataframe untouched
+
 df <- mutate_if(df, is.character, as.factor) # convert char data to categorical
 df$SIA552051.801 <- as.numeric(df$SIA552051.801) # this char data was actually integer
 df$Failure <- as.factor(df$Failure) # failure was a numeric -> changed to categorical
